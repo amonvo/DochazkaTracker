@@ -1,0 +1,12 @@
+﻿<Window x:Class="DochazkaTracker.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Docházka Tracker" Height="350" Width="400">
+    <Grid>
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Button x:Name="BtnPrichod" Content="Příchod" Width="200" Height="50" Margin="0,10,0,10" Click="BtnPrichod_Click"/>
+            <Button x:Name="BtnOdchod" Content="Odchod" Width="200" Height="50" Margin="0,10,0,10" Click="BtnOdchod_Click"/>
+            <Button x:Name="BtnExportovat" Content="Exportovat" Width="200" Height="50" Margin="0,10,0,10" Click="BtnExportovat_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
