@@ -56,7 +56,7 @@ namespace DochazkaTracker
             {
                 Margin = new Thickness(10)
             };
-
+            //test
             TextBlock title = new TextBlock
             {
                 Text = "Docházka Tracker",
