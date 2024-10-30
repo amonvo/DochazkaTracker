@@ -35,7 +35,7 @@ namespace DochazkaTracker
 
             // Načtení záznamů při spuštění
             LoadDochazkaData();
-
+            //tesrts
             // Nastavení vzhledu okna
             this.Title = "Docházka Tracker";
             this.Width = 800;
