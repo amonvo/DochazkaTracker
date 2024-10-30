@@ -35,7 +35,7 @@ namespace DochazkaTracker
 
             // Načtení záznamů při spuštění
             LoadDochazkaData();
-
+            //tesrts
             // Nastavení vzhledu okna
             this.Title = "Docházka Tracker";
             this.Width = 800;
@@ -67,7 +67,7 @@ namespace DochazkaTracker
                 Margin = new Thickness(0, 0, 0, 20)
             };
             mainPanel.Children.Add(title);
-
+            //t
             Button btnPrichod = new Button
             {
                 Content = "Zaznamenat Příchod",
