@@ -219,11 +219,13 @@ namespace DochazkaTracker
             double prumernaPracovniDoba = dochazky.Average(d => d.Rozdil.TotalHours);
             int pocetDniSplneno = dochazky.Count(d => d.Rozdil.TotalHours >= 9);
             int pocetDniNesplneno = dochazky.Count(d => d.Rozdil.TotalHours < 9);
+            double celkovyPrescas = dochazky.Sum(d => Math.Max(0, d.Rozdil.TotalHours - 9));
 
             string zprava = $"Statistiky docházky:\n" +
                            $"Průměrná pracovní doba: {prumernaPracovniDoba:F2} hodin\n" +
                            $"Počet dní splněno (9+ hodin): {pocetDniSplneno}\n" +
-                           $"Počet dní nesplněno (< 9 hodin): {pocetDniNesplneno}";
+                           $"Počet dní nesplněno (< 9 hodin): {pocetDniNesplneno}\n" +
+                           $"Celkový přesčas: {celkovyPrescas:F2} hodin";
 
             MessageBox.Show(zprava, "Statistiky", MessageBoxButton.OK, MessageBoxImage.Information);
         }
@@ -348,6 +350,95 @@ namespace DochazkaTracker
             grafWindow.Show();
         }
 
+        private void BtnEditovatZaznam_Click(object sender, RoutedEventArgs e)
+        {
+            if (dochazky.Count == 0)
+            {
+                MessageBox.Show("Nejsou žádné záznamy k editaci.", "Editace záznamu", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            ListBox zaznamyList = new ListBox
+            {
+                Margin = new Thickness(10),
+                Height = 200
+            };
+
+            foreach (var dochazka in dochazky)
+            {
+                zaznamyList.Items.Add($"{dochazka.Prichod.ToShortDateString()} - Příchod: {dochazka.Prichod:HH:mm}, Odchod: {dochazka.Odchod?.ToString("HH:mm") ?? "N/A"}");
+            }
+
+            Button potvrditButton = new Button
+            {
+                Content = "Editovat",
+                Width = 100,
+                Margin = new Thickness(10),
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+
+            StackPanel panel = new StackPanel
+            {
+                Children = { zaznamyList, potvrditButton },
+                Margin = new Thickness(10)
+            };
+
+            Window editWindow = new Window
+            {
+                Title = "Vyberte záznam k editaci",
+                Width = 400,
+                Height = 300,
+                Content = panel,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen
+            };
+
+            potvrditButton.Click += (s, args) =>
+            {
+                if (zaznamyList.SelectedIndex == -1)
+                {
+                    MessageBox.Show("Vyberte záznam k editaci.", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                editWindow.DialogResult = true;
+                editWindow.Close();
+            };
+
+            if (editWindow.ShowDialog() == true)
+            {
+                int index = zaznamyList.SelectedIndex;
+                EditZaznam(index);
+            }
+        }
+
+        private void EditZaznam(int index)
+        {
+            Dochazka vybranaDochazka = dochazky[index];
+
+            OpenTimeInputWindow("Editovat Příchod", (novyPrichod) =>
+            {
+                OpenTimeInputWindow("Editovat Odchod", (novyOdchod) =>
+                {
+                    novyPrichod = new DateTime(vybranaDochazka.Prichod.Year, vybranaDochazka.Prichod.Month, vybranaDochazka.Prichod.Day, novyPrichod.Hour, novyPrichod.Minute, novyPrichod.Second);
+                    novyOdchod = new DateTime(vybranaDochazka.Prichod.Year, vybranaDochazka.Prichod.Month, vybranaDochazka.Prichod.Day, novyOdchod.Hour, novyOdchod.Minute, novyOdchod.Second);
+
+                    if (novyOdchod <= novyPrichod)
+                    {
+                        MessageBox.Show("Odchod musí být později než příchod.", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    vybranaDochazka.Prichod = novyPrichod;
+                    vybranaDochazka.Odchod = novyOdchod;
+                    vybranaDochazka.VypocetRozdilu();
+                    SaveDochazkaData();
+
+                    MessageBox.Show("Záznam byl úspěšně upraven.", "Editace záznamu", MessageBoxButton.OK, MessageBoxImage.Information);
+                });
+            });
+        }
+
+
         private void OpenTimeInputWindow(string title, Action<DateTime> onTimeSelected)
         {
             Window timeWindow = new Window
@@ -418,6 +509,8 @@ namespace DochazkaTracker
             timeWindow.ShowDialog();
         }
     }
+
+
 
     public class Dochazka
     {
