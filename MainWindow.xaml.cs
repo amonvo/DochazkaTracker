@@ -70,6 +70,12 @@ namespace DochazkaTracker
         private void BtnDoplnitDochazku_Click(object sender, RoutedEventArgs e)
         {
             DatePicker datePicker = new DatePicker();
+            ComboBox rezimComboBox = new ComboBox
+            {
+                ItemsSource = new List<string> { "Práce z domova", "Kancelář", "Dovolená", "Služební cesta" },
+                SelectedIndex = 0,
+                Margin = new Thickness(0, 10, 0, 10)
+            };
             Button potvrditButton = new Button
             {
                 Content = "Potvrdit",
@@ -80,15 +86,15 @@ namespace DochazkaTracker
 
             StackPanel panel = new StackPanel
             {
-                Children = { datePicker, potvrditButton },
+                Children = { datePicker, rezimComboBox, potvrditButton },
                 Margin = new Thickness(10)
             };
 
             Window dateWindow = new Window
             {
-                Title = "Vyberte datum pro doplnění docházky",
+                Title = "Vyberte datum a režim pro doplnění docházky",
                 Width = 300,
-                Height = 200,
+                Height = 250,
                 Content = panel,
                 WindowStartupLocation = WindowStartupLocation.CenterScreen
             };
@@ -109,6 +115,7 @@ namespace DochazkaTracker
             if (dateWindow.ShowDialog() == true)
             {
                 DateTime datum = datePicker.SelectedDate ?? DateTime.Now;
+                string vybranyRezim = rezimComboBox.SelectedItem.ToString();
                 OpenTimeInputWindow("Příchod", (prichodCas) =>
                 {
                     OpenTimeInputWindow("Odchod", (odchodCas) =>
@@ -128,7 +135,7 @@ namespace DochazkaTracker
                             return;
                         }
 
-                        Dochazka novaDochazka = new Dochazka { Prichod = prichodCas, Odchod = odchodCas };
+                        Dochazka novaDochazka = new Dochazka { Prichod = prichodCas, Odchod = odchodCas, Rezim = vybranyRezim };
                         novaDochazka.VypocetRozdilu();
                         dochazky.Add(novaDochazka);
                         SaveDochazkaData();
@@ -138,6 +145,7 @@ namespace DochazkaTracker
                 });
             }
         }
+
 
         private void BtnExportovat_Click(object sender, RoutedEventArgs e)
         {
@@ -439,6 +447,8 @@ namespace DochazkaTracker
         }
 
 
+
+
         private void OpenTimeInputWindow(string title, Action<DateTime> onTimeSelected)
         {
             Window timeWindow = new Window
@@ -508,21 +518,23 @@ namespace DochazkaTracker
             timeWindow.Content = panel;
             timeWindow.ShowDialog();
         }
-    }
 
 
 
-    public class Dochazka
-    {
-        public DateTime Prichod { get; set; }
-        public DateTime? Odchod { get; set; }
-        public TimeSpan Rozdil { get; private set; }
-
-        public void VypocetRozdilu()
+        public class Dochazka
         {
-            if (Odchod.HasValue)
+            public DateTime Prichod { get; set; }
+            public DateTime? Odchod { get; set; }
+            public TimeSpan Rozdil { get; private set; }
+            public string Rezim { get; set; } // Přidána vlastnost Rezim
+
+
+            public void VypocetRozdilu()
             {
-                Rozdil = Odchod.Value - Prichod;
+                if (Odchod.HasValue)
+                {
+                    Rozdil = Odchod.Value - Prichod;
+                }
             }
         }
     }

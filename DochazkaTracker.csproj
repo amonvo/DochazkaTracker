@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="EPPlus" Version="7.4.1" />
+    <PackageReference Include="EPPlus" Version="7.4.2" />
     <PackageReference Include="LiveCharts.Wpf.NetCore3" Version="0.9.8" />
   </ItemGroup>
 
