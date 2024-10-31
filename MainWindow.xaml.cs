@@ -1,17 +1,15 @@
-﻿using System;
+﻿// MainWindow.xaml.cs
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using LiveCharts;
 using LiveCharts.Wpf;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
-using Border = System.Windows.Controls.Border;
-using DataGrid = System.Windows.Controls.DataGrid;
 
 namespace DochazkaTracker
 {
@@ -35,169 +33,6 @@ namespace DochazkaTracker
 
             // Načtení záznamů při spuštění
             LoadDochazkaData();
-            //tesrts
-            // Nastavení vzhledu okna
-            this.Title = "Docházka Tracker";
-            this.Width = 800;
-            this.Height = 800;
-            this.Background = new LinearGradientBrush(Colors.SteelBlue, Colors.LightGray, 90);
-
-            // Vytvoření layoutu
-            System.Windows.Controls.Border mainBorder = new Border
-            {
-                BorderBrush = Brushes.DarkSlateGray,
-                BorderThickness = new Thickness(3),
-                Padding = new Thickness(10),
-                Margin = new Thickness(20),
-                Background = Brushes.White
-            };
-
-            StackPanel mainPanel = new StackPanel
-            {
-                Margin = new Thickness(10)
-            };
-            //test
-            TextBlock title = new TextBlock
-            {
-                Text = "Docházka Tracker",
-                FontSize = 28,
-                FontWeight = FontWeights.Bold,
-                Foreground = Brushes.DarkSlateBlue,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 0, 0, 20)
-            };
-            mainPanel.Children.Add(title);
-            //t
-            Button btnPrichod = new Button
-            {
-                Content = "Zaznamenat Příchod",
-                Width = 250,
-                Height = 50,
-                Margin = new Thickness(0, 10, 0, 10),
-                Background = new LinearGradientBrush(Colors.LightGreen, Colors.Green, 90),
-                Foreground = Brushes.White,
-                FontWeight = FontWeights.Bold,
-                BorderBrush = Brushes.DarkGreen,
-                BorderThickness = new Thickness(2)
-            };
-            btnPrichod.Click += BtnPrichod_Click;
-            mainPanel.Children.Add(btnPrichod);
-
-            Button btnOdchod = new Button
-            {
-                Content = "Zaznamenat Odchod",
-                Width = 250,
-                Height = 50,
-                Margin = new Thickness(0, 10, 0, 10),
-                Background = new LinearGradientBrush(Colors.LightCoral, Colors.Red, 90),
-                Foreground = Brushes.White,
-                FontWeight = FontWeights.Bold,
-                BorderBrush = Brushes.DarkRed,
-                BorderThickness = new Thickness(2)
-            };
-            btnOdchod.Click += BtnOdchod_Click;
-            mainPanel.Children.Add(btnOdchod);
-
-            Button btnExportovat = new Button
-            {
-                Content = "Exportovat do Excelu",
-                Width = 250,
-                Height = 50,
-                Margin = new Thickness(0, 10, 0, 10),
-                Background = new LinearGradientBrush(Colors.LightSkyBlue, Colors.SteelBlue, 90),
-                Foreground = Brushes.White,
-                FontWeight = FontWeights.Bold,
-                BorderBrush = Brushes.DarkBlue,
-                BorderThickness = new Thickness(2)
-            };
-            btnExportovat.Click += BtnExportovat_Click;
-            mainPanel.Children.Add(btnExportovat);
-
-            Button btnZobrazitDochazku = new Button
-            {
-                Content = "Zobrazit Docházku",
-                Width = 250,
-                Height = 50,
-                Margin = new Thickness(0, 10, 0, 10),
-                Background = new LinearGradientBrush(Colors.LightYellow, Colors.Orange, 90),
-                Foreground = Brushes.White,
-                FontWeight = FontWeights.Bold,
-                BorderBrush = Brushes.DarkOrange,
-                BorderThickness = new Thickness(2)
-            };
-            btnZobrazitDochazku.Click += BtnZobrazitDochazku_Click;
-            mainPanel.Children.Add(btnZobrazitDochazku);
-
-            Button btnVymazatZaznamy = new Button
-            {
-                Content = "Vymazat Záznamy",
-                Width = 250,
-                Height = 50,
-                Margin = new Thickness(0, 10, 0, 10),
-                Background = new LinearGradientBrush(Colors.LightPink, Colors.OrangeRed, 90),
-                Foreground = Brushes.White,
-                FontWeight = FontWeights.Bold,
-                BorderBrush = Brushes.DarkRed,
-                BorderThickness = new Thickness(2)
-            };
-            btnVymazatZaznamy.Click += BtnVymazatZaznamy_Click;
-            mainPanel.Children.Add(btnVymazatZaznamy);
-
-            Button btnStatistiky = new Button
-            {
-                Content = "Zobrazit Statistiky",
-                Width = 250,
-                Height = 50,
-                Margin = new Thickness(0, 10, 0, 10),
-                Background = new LinearGradientBrush(Colors.LightCyan, Colors.CadetBlue, 90),
-                Foreground = Brushes.White,
-                FontWeight = FontWeights.Bold,
-                BorderBrush = Brushes.DarkCyan,
-                BorderThickness = new Thickness(2)
-            };
-            btnStatistiky.Click += BtnStatistiky_Click;
-            mainPanel.Children.Add(btnStatistiky);
-
-            Button btnZobrazitExcel = new Button
-            {
-                Content = "Zobrazit Excel",
-                Width = 250,
-                Height = 50,
-                Margin = new Thickness(0, 10, 0, 10),
-                Background = new LinearGradientBrush(Colors.LightGoldenrodYellow, Colors.Goldenrod, 90),
-                Foreground = Brushes.White,
-                FontWeight = FontWeights.Bold,
-                BorderBrush = Brushes.DarkGoldenrod,
-                BorderThickness = new Thickness(2)
-            };
-            btnZobrazitExcel.Click += BtnZobrazitExcel_Click;
-            mainPanel.Children.Add(btnZobrazitExcel);
-
-            Button btnZobrazitGraf = new Button
-            {
-                Content = "Zobrazit Graf Docházky",
-                Width = 250,
-                Height = 50,
-                Margin = new Thickness(0, 10, 0, 10),
-                Background = new LinearGradientBrush(Colors.LightSkyBlue, Colors.MediumSlateBlue, 90),
-                Foreground = Brushes.White,
-                FontWeight = FontWeights.Bold,
-                BorderBrush = Brushes.MediumSlateBlue,
-                BorderThickness = new Thickness(2)
-            };
-            btnZobrazitGraf.Click += BtnZobrazitGraf_Click;
-            mainPanel.Children.Add(btnZobrazitGraf);
-
-            // Přidání kalendáře pro výběr data
-            DatePicker datePicker = new DatePicker
-            {
-                Width = 250,
-                Margin = new Thickness(0, 10, 0, 10)
-            };
-            mainPanel.Children.Add(datePicker);
-
-            mainBorder.Child = mainPanel;
-            this.Content = mainBorder;
 
             // Uložení záznamů při zavření okna
             this.Closing += MainWindow_Closing;
@@ -232,69 +67,75 @@ namespace DochazkaTracker
             File.WriteAllText(DataFilePath, jsonData);
         }
 
-        private void BtnPrichod_Click(object sender, RoutedEventArgs e)
+        private void BtnDoplnitDochazku_Click(object sender, RoutedEventArgs e)
         {
-            string datumStr = Microsoft.VisualBasic.Interaction.InputBox("Zadejte datum (dd.MM.yyyy)", "Datum", DateTime.Now.ToString("dd.MM.yyyy"));
-            if (!DateTime.TryParse(datumStr, out DateTime datum))
+            DatePicker datePicker = new DatePicker();
+            Button potvrditButton = new Button
             {
-                MessageBox.Show("Zadané datum není platné.", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
+                Content = "Potvrdit",
+                Width = 100,
+                Margin = new Thickness(10),
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
 
-            string prichodStr = Microsoft.VisualBasic.Interaction.InputBox("V kolik jste přišli do práce? (HH:mm)", "Příchod", DateTime.Now.ToString("HH:mm"));
-            if (DateTime.TryParse(prichodStr, out DateTime prichod))
+            StackPanel panel = new StackPanel
             {
-                prichod = new DateTime(datum.Year, datum.Month, datum.Day, prichod.Hour, prichod.Minute, prichod.Second);
-                if (dochazky.Any(d => d.Prichod.Date == datum.Date))
+                Children = { datePicker, potvrditButton },
+                Margin = new Thickness(10)
+            };
+
+            Window dateWindow = new Window
+            {
+                Title = "Vyberte datum pro doplnění docházky",
+                Width = 300,
+                Height = 200,
+                Content = panel,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen
+            };
+
+            potvrditButton.Click += (s, args) =>
+            {
+                if (datePicker.SelectedDate.HasValue)
                 {
-                    MessageBox.Show("Příchod již byl zaznamenán pro tento den.", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-                dochazky.Add(new Dochazka { Prichod = prichod });
-                SaveDochazkaData(); // Uložení po přidání nového záznamu
-                MessageBox.Show("Příchod byl úspěšně zaznamenán.", "Příchod", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                MessageBox.Show("Zadaný čas není platný.", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void BtnOdchod_Click(object sender, RoutedEventArgs e)
-        {
-            if (dochazky.Count == 0)
-            {
-                MessageBox.Show("Nejprve musíte zadat příchod.", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            string odchodStr = Microsoft.VisualBasic.Interaction.InputBox("V kolik jste odešli z práce? (HH:mm)", "Odchod", DateTime.Now.ToString("HH:mm"));
-            if (DateTime.TryParse(odchodStr, out DateTime odchod))
-            {
-                Dochazka? posledni = dochazky.LastOrDefault(d => d.Odchod == null);
-                if (posledni == null)
-                {
-                    MessageBox.Show("Neexistuje žádný záznam příchodu bez odchodu.", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                odchod = new DateTime(posledni.Prichod.Year, posledni.Prichod.Month, posledni.Prichod.Day, odchod.Hour, odchod.Minute, odchod.Second);
-                posledni.Odchod = odchod;
-                posledni.VypocetRozdilu();
-                SaveDochazkaData(); // Uložení po aktualizaci záznamu
-
-                if (posledni.Rozdil.TotalHours >= 9)
-                {
-                    MessageBox.Show($"Pracovní doba: {posledni.Rozdil}", "Pracovní doba", MessageBoxButton.OK, MessageBoxImage.Information);
+                    dateWindow.DialogResult = true;
+                    dateWindow.Close();
                 }
                 else
                 {
-                    MessageBox.Show($"Pracovní doba: {posledni.Rozdil}\nChtěli byste zůstat déle?", "Pracovní doba", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    MessageBox.Show("Vyberte datum.", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
-            }
-            else
+            };
+
+            if (dateWindow.ShowDialog() == true)
             {
-                MessageBox.Show("Zadaný čas není platný.", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
+                DateTime datum = datePicker.SelectedDate ?? DateTime.Now;
+                OpenTimeInputWindow("Příchod", (prichodCas) =>
+                {
+                    OpenTimeInputWindow("Odchod", (odchodCas) =>
+                    {
+                        prichodCas = new DateTime(datum.Year, datum.Month, datum.Day, prichodCas.Hour, prichodCas.Minute, prichodCas.Second);
+                        odchodCas = new DateTime(datum.Year, datum.Month, datum.Day, odchodCas.Hour, odchodCas.Minute, odchodCas.Second);
+
+                        if (odchodCas <= prichodCas)
+                        {
+                            MessageBox.Show("Odchod musí být později než příchod.", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
+                            return;
+                        }
+
+                        if (dochazky.Any(d => d.Prichod.Date == datum.Date))
+                        {
+                            MessageBox.Show("Docházka pro tento den již existuje.", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
+                            return;
+                        }
+
+                        Dochazka novaDochazka = new Dochazka { Prichod = prichodCas, Odchod = odchodCas };
+                        novaDochazka.VypocetRozdilu();
+                        dochazky.Add(novaDochazka);
+                        SaveDochazkaData();
+
+                        MessageBox.Show("Docházka byla úspěšně doplněna.", "Doplnění docházky", MessageBoxButton.OK, MessageBoxImage.Information);
+                    });
+                });
             }
         }
 
@@ -361,7 +202,8 @@ namespace DochazkaTracker
             if (MessageBox.Show("Opravdu chcete vymazat všechny záznamy?", "Vymazat záznamy", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
             {
                 dochazky.Clear();
-                SaveDochazkaData(); // Uložení po vymazání záznamů
+                SaveDochazkaData();
+                File.Delete("dochazka.xlsx"); // Delete the existing Excel file to prevent showing outdated data
                 MessageBox.Show("Všechny záznamy byly vymazány.", "Vymazáno", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
@@ -504,6 +346,76 @@ namespace DochazkaTracker
 
             grafWindow.Content = chart;
             grafWindow.Show();
+        }
+
+        private void OpenTimeInputWindow(string title, Action<DateTime> onTimeSelected)
+        {
+            Window timeWindow = new Window
+            {
+                Title = title,
+                Width = 300,
+                Height = 200,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen
+            };
+
+            StackPanel panel = new StackPanel
+            {
+                Margin = new Thickness(10)
+            };
+
+            TextBlock label = new TextBlock
+            {
+                Text = $"V kolik jste {title.ToLower()}? (HH:mm)",
+                Margin = new Thickness(0, 0, 0, 10)
+            };
+            panel.Children.Add(label);
+
+            TextBox timeTextBox = new TextBox
+            {
+                Text = DateTime.Now.ToString("HH:mm"),
+                Margin = new Thickness(0, 0, 0, 10)
+            };
+            panel.Children.Add(timeTextBox);
+
+            Slider timeSlider = new Slider
+            {
+                Minimum = 0,
+                Maximum = 1440,
+                Value = DateTime.Now.Hour * 60 + DateTime.Now.Minute,
+                TickFrequency = 30,
+                Width = 250,
+                Margin = new Thickness(0, 0, 0, 10)
+            };
+            timeSlider.ValueChanged += (s, args) =>
+            {
+                TimeSpan selectedTime = TimeSpan.FromMinutes(timeSlider.Value);
+                timeTextBox.Text = $"{selectedTime:hh\\:mm}";
+            };
+            panel.Children.Add(timeSlider);
+
+            Button okButton = new Button
+            {
+                Content = "OK",
+                Width = 100,
+                Margin = new Thickness(0, 10, 0, 0),
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+            okButton.Click += (s, args) =>
+            {
+                if (DateTime.TryParse(timeTextBox.Text, out DateTime selectedTime))
+                {
+                    onTimeSelected(selectedTime);
+                    timeWindow.Close();
+                }
+                else
+                {
+                    MessageBox.Show("Zadaný čas není platný.", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            };
+            panel.Children.Add(okButton);
+
+            timeWindow.Content = panel;
+            timeWindow.ShowDialog();
         }
     }
 

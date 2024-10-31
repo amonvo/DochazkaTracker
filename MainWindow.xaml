@@ -1,12 +1,17 @@
 ﻿<Window x:Class="DochazkaTracker.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Docházka Tracker" Height="350" Width="400">
+        Title="Docházka Tracker" Height="800" Width="800">
     <Grid>
-        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Button x:Name="BtnPrichod" Content="Příchod" Width="200" Height="50" Margin="0,10,0,10" Click="BtnPrichod_Click"/>
-            <Button x:Name="BtnOdchod" Content="Odchod" Width="200" Height="50" Margin="0,10,0,10" Click="BtnOdchod_Click"/>
-            <Button x:Name="BtnExportovat" Content="Exportovat" Width="200" Height="50" Margin="0,10,0,10" Click="BtnExportovat_Click"/>
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10">
+            <TextBlock Text="Docházka Tracker" FontSize="28" FontWeight="Bold" Foreground="DarkSlateBlue" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+            <Button x:Name="BtnDoplnitDochazku" Content="Doplnit Docházku" Width="250" Height="50" Margin="0,10,0,10" Background="LightGreen" Click="BtnDoplnitDochazku_Click"/>
+            <Button x:Name="BtnExportovat" Content="Exportovat do Excelu" Width="250" Height="50" Margin="0,10,0,10" Background="LightSkyBlue" Click="BtnExportovat_Click"/>
+            <Button x:Name="BtnZobrazitDochazku" Content="Zobrazit Docházku" Width="250" Height="50" Margin="0,10,0,10" Background="LightYellow" Click="BtnZobrazitDochazku_Click"/>
+            <Button x:Name="BtnVymazatZaznamy" Content="Vymazat Záznamy" Width="250" Height="50" Margin="0,10,0,10" Background="LightPink" Click="BtnVymazatZaznamy_Click"/>
+            <Button x:Name="BtnStatistiky" Content="Zobrazit Statistiky" Width="250" Height="50" Margin="0,10,0,10" Background="LightCyan" Click="BtnStatistiky_Click"/>
+            <Button x:Name="BtnZobrazitExcel" Content="Zobrazit Excel" Width="250" Height="50" Margin="0,10,0,10" Background="LightGoldenrodYellow" Click="BtnZobrazitExcel_Click"/>
+            <Button x:Name="BtnZobrazitGraf" Content="Zobrazit Graf Docházky" Width="250" Height="50" Margin="0,10,0,10" Background="LightSkyBlue" Click="BtnZobrazitGraf_Click"/>
         </StackPanel>
     </Grid>
 </Window>
