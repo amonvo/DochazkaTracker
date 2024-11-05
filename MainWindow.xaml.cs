@@ -167,14 +167,28 @@ namespace DochazkaTracker
                 worksheet.Row(1).Style.Font.Bold = true;
 
                 int row = 2;
-                foreach (Dochazka dochazka in dochazky)
+
+                var groupedDochazky = dochazky.GroupBy(d => new { d.Prichod.Year, d.Prichod.Month })
+                                              .OrderBy(g => g.Key.Year)
+                                              .ThenBy(g => g.Key.Month);
+
+                foreach (var monthGroup in groupedDochazky)
                 {
-                    worksheet.Cells[row, 1].Value = dochazka.Prichod.ToShortDateString();
-                    worksheet.Cells[row, 2].Value = dochazka.Prichod.ToString("HH:mm");
-                    worksheet.Cells[row, 3].Value = dochazka.Odchod?.ToString("HH:mm");
-                    worksheet.Cells[row, 4].Value = dochazka.Rozdil.ToString();
-                    worksheet.Cells[row, 5].Value = dochazka.Rozdil.TotalHours >= 9 ? "Splněno" : "Nesplněno";
+                    worksheet.Cells[row, 1].Value = $"{monthGroup.Key.Month}/{monthGroup.Key.Year}";
+                    worksheet.Row(row).Style.Font.Bold = true;
                     row++;
+
+                    foreach (var dochazka in monthGroup)
+                    {
+                        worksheet.Cells[row, 1].Value = dochazka.Prichod.ToShortDateString();
+                        worksheet.Cells[row, 2].Value = dochazka.Prichod.ToString("HH:mm");
+                        worksheet.Cells[row, 3].Value = dochazka.Odchod?.ToString("HH:mm");
+                        worksheet.Cells[row, 4].Value = dochazka.Rozdil.ToString();
+                        worksheet.Cells[row, 5].Value = dochazka.Rozdil.TotalHours >= 9 ? "Splněno" : "Nesplněno";
+                        row++;
+                    }
+
+                    row++; // Prázdný řádek mezi jednotlivými měsíci
                 }
 
                 worksheet.Cells[$"A1:E{row - 1}"].AutoFitColumns();
@@ -188,6 +202,7 @@ namespace DochazkaTracker
             MessageBox.Show($"Docházka byla exportována do souboru {filePath}", "Export", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
+
         private void BtnZobrazitDochazku_Click(object sender, RoutedEventArgs e)
         {
             if (dochazky.Count == 0)
@@ -196,10 +211,17 @@ namespace DochazkaTracker
                 return;
             }
 
+            var mesice = dochazky.GroupBy(d => new { d.Prichod.Year, d.Prichod.Month })
+                                 .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month);
+
             string zprava = "Záznamy docházky:\n";
-            foreach (var dochazka in dochazky)
+            foreach (var mesic in mesice)
             {
-                zprava += $"Datum: {dochazka.Prichod.ToShortDateString()}, Příchod: {dochazka.Prichod:HH:mm}, Odchod: {dochazka.Odchod?.ToString("HH:mm") ?? "N/A"}, Rozdíl: {dochazka.Rozdil}\n";
+                zprava += $"\n{mesic.Key.Month}/{mesic.Key.Year}:\n";
+                foreach (var dochazka in mesic)
+                {
+                    zprava += $"Datum: {dochazka.Prichod.ToShortDateString()}, Příchod: {dochazka.Prichod:HH:mm}, Odchod: {dochazka.Odchod?.ToString("HH:mm") ?? "N/A"}, Rozdíl: {dochazka.Rozdil}, Režim: {dochazka.Rezim}\n";
+                }
             }
 
             MessageBox.Show(zprava, "Docházka", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -224,43 +246,82 @@ namespace DochazkaTracker
                 return;
             }
 
-            double prumernaPracovniDoba = dochazky.Average(d => d.Rozdil.TotalHours);
-            int pocetDniSplneno = dochazky.Count(d => d.Rozdil.TotalHours >= 9);
-            int pocetDniNesplneno = dochazky.Count(d => d.Rozdil.TotalHours < 9);
-            double celkovyPrescas = dochazky.Sum(d => Math.Max(0, d.Rozdil.TotalHours - 9));
+            // Vytvoření ComboBoxu pro výběr měsíce a roku
+            ComboBox monthFilter = new ComboBox
+            {
+                Width = 200,
+                Margin = new Thickness(10),
+                ItemsSource = dochazky.Select(d => $"{d.Prichod.Month}/{d.Prichod.Year}")
+                                      .Distinct()
+                                      .OrderBy(m => m)
+                                      .ToList()
+            };
 
-            string zprava = $"Statistiky docházky:\n" +
-                           $"Průměrná pracovní doba: {prumernaPracovniDoba:F2} hodin\n" +
-                           $"Počet dní splněno (9+ hodin): {pocetDniSplneno}\n" +
-                           $"Počet dní nesplněno (< 9 hodin): {pocetDniNesplneno}\n" +
-                           $"Celkový přesčas: {celkovyPrescas:F2} hodin";
+            Button calculateButton = new Button
+            {
+                Content = "Vypočítat",
+                Width = 100,
+                Margin = new Thickness(10),
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
 
-            MessageBox.Show(zprava, "Statistiky", MessageBoxButton.OK, MessageBoxImage.Information);
+            StackPanel panel = new StackPanel();
+            panel.Children.Add(monthFilter);
+            panel.Children.Add(calculateButton);
+
+            Window statWindow = new Window
+            {
+                Title = "Výběr měsíce pro statistiky",
+                Width = 300,
+                Height = 200,
+                Content = panel,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen
+            };
+
+            calculateButton.Click += (s, args) =>
+            {
+                if (monthFilter.SelectedItem == null)
+                {
+                    MessageBox.Show("Vyberte měsíc.", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Získání vybraného měsíce a roku
+                string selectedMonth = monthFilter.SelectedItem.ToString();
+                int month = int.Parse(selectedMonth.Split('/')[0]);
+                int year = int.Parse(selectedMonth.Split('/')[1]);
+
+                // Filtrování záznamů pro vybraný měsíc a rok
+                var filteredDochazky = dochazky.Where(d => d.Prichod.Month == month && d.Prichod.Year == year);
+
+                if (!filteredDochazky.Any())
+                {
+                    MessageBox.Show("Pro vybraný měsíc nejsou žádné záznamy.", "Statistiky", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Výpočet statistik
+                double prumernaPracovniDoba = filteredDochazky.Average(d => d.Rozdil.TotalHours);
+                int pocetDniSplneno = filteredDochazky.Count(d => d.Rozdil.TotalHours >= 9);
+                int pocetDniNesplneno = filteredDochazky.Count(d => d.Rozdil.TotalHours < 9);
+                double celkovyPrescas = filteredDochazky.Sum(d => Math.Max(0, d.Rozdil.TotalHours - 9));
+
+                string zprava = $"Statistiky pro {selectedMonth}:\n" +
+                                $"Průměrná pracovní doba: {prumernaPracovniDoba:F2} hodin\n" +
+                                $"Počet dní splněno (9+ hodin): {pocetDniSplneno}\n" +
+                                $"Počet dní nesplněno (< 9 hodin): {pocetDniNesplneno}\n" +
+                                $"Celkový přesčas: {celkovyPrescas:F2} hodin";
+
+                MessageBox.Show(zprava, "Statistiky", MessageBoxButton.OK, MessageBoxImage.Information);
+            };
+
+            statWindow.ShowDialog();
         }
 
-        private void BtnZobrazitExcel_Click(object sender, RoutedEventArgs e)
+
+
+        private void LoadData(string filePath, DataGrid dataGrid)
         {
-            string filePath = "dochazka.xlsx";
-            if (!File.Exists(filePath))
-            {
-                MessageBox.Show("Excel soubor neexistuje. Nejprve proveďte export.", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            Window excelWindow = new Window
-            {
-                Title = "Zobrazení Excelu",
-                Width = 800,
-                Height = 600
-            };
-
-            DataGrid dataGrid = new DataGrid
-            {
-                AutoGenerateColumns = true,
-                Margin = new Thickness(10),
-                IsReadOnly = true
-            };
-
             using (ExcelPackage package = new ExcelPackage(new FileInfo(filePath)))
             {
                 ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
@@ -295,68 +356,32 @@ namespace DochazkaTracker
                     }
                     data.Add(rowData);
                 }
-
                 dataGrid.ItemsSource = data;
             }
-
-            excelWindow.Content = dataGrid;
-            excelWindow.Show();
         }
 
-        private void BtnZobrazitGraf_Click(object sender, RoutedEventArgs e)
+        private void FilterData(string selectedMonth, DataGrid dataGrid)
         {
-            var validDochazky = dochazky.Where(d => d.Odchod.HasValue).ToList();
-            if (validDochazky.Count == 0)
-            {
-                MessageBox.Show("Nejsou žádné záznamy k zobrazení grafu.", "Graf", MessageBoxButton.OK, MessageBoxImage.Warning);
+            if (string.IsNullOrEmpty(selectedMonth))
                 return;
-            }
 
-            Window grafWindow = new Window
-            {
-                Title = "Graf Docházky",
-                Width = 800,
-                Height = 600
-            };
+            int month = int.Parse(selectedMonth.Split('/')[0]);
+            int year = int.Parse(selectedMonth.Split('/')[1]);
 
-            CartesianChart chart = new CartesianChart
-            {
-                Margin = new Thickness(10)
-            };
-
-            var values = new ChartValues<double>();
-            var labels = new List<string>();
-
-            foreach (var dochazka in validDochazky)
-            {
-                values.Add(dochazka.Rozdil.TotalHours);
-                labels.Add(dochazka.Prichod.ToShortDateString());
-            }
-
-            LineSeries lineSeries = new LineSeries
-            {
-                Title = "Pracovní doba (hodiny)",
-                Values = values,
-                PointGeometry = DefaultGeometries.Circle,
-                PointGeometrySize = 10
-            };
-
-            chart.Series = new SeriesCollection { lineSeries };
-            chart.AxisX.Add(new Axis
-            {
-                Title = "Datum",
-                Labels = labels
-            });
-
-            chart.AxisY.Add(new Axis
-            {
-                Title = "Pracovní doba (hodiny)",
-                LabelFormatter = value => value.ToString("N2")
-            });
-
-            grafWindow.Content = chart;
-            grafWindow.Show();
+            dataGrid.ItemsSource = dochazky.Where(d => d.Prichod.Month == month && d.Prichod.Year == year)
+                                           .Select(d => new DochazkaRow
+                                           {
+                                               Datum = d.Prichod.ToShortDateString(),
+                                               Prichod = d.Prichod.ToString("HH:mm"),
+                                               Odchod = d.Odchod?.ToString("HH:mm"),
+                                               Rozdil = d.Rozdil.ToString(),
+                                               Poznamka = d.Rozdil.TotalHours >= 9 ? "Splněno" : "Nesplněno"
+                                           })
+                                           .ToList();
         }
+
+
+        
 
         private void BtnEditovatZaznam_Click(object sender, RoutedEventArgs e)
         {

@@ -11,8 +11,6 @@
             <Button x:Name="BtnZobrazitDochazku" Content="Zobrazit Docházku" Width="250" Height="50" Margin="0,10,0,10" Background="LightYellow" Click="BtnZobrazitDochazku_Click"/>
             <Button x:Name="BtnVymazatZaznamy" Content="Vymazat Záznamy" Width="250" Height="50" Margin="0,10,0,10" Background="LightPink" Click="BtnVymazatZaznamy_Click"/>
             <Button x:Name="BtnStatistiky" Content="Zobrazit Statistiky" Width="250" Height="50" Margin="0,10,0,10" Background="LightCyan" Click="BtnStatistiky_Click"/>
-            <Button x:Name="BtnZobrazitExcel" Content="Zobrazit Excel" Width="250" Height="50" Margin="0,10,0,10" Background="LightGoldenrodYellow" Click="BtnZobrazitExcel_Click"/>
-            <Button x:Name="BtnZobrazitGraf" Content="Zobrazit Graf Docházky" Width="250" Height="50" Margin="0,10,0,10" Background="LightSkyBlue" Click="BtnZobrazitGraf_Click"/>
         </StackPanel>
     </Grid>
 </Window>
