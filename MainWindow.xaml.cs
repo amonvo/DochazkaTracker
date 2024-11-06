@@ -211,8 +211,10 @@ namespace DochazkaTracker
                 return;
             }
 
-            var mesice = dochazky.GroupBy(d => new { d.Prichod.Year, d.Prichod.Month })
-                                 .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month);
+            // Seřazení záznamů podle data (sestupně - nejnovější nahoře)
+            var sortedDochazky = dochazky.OrderByDescending(d => d.Prichod).ToList();
+
+            var mesice = sortedDochazky.GroupBy(d => new { d.Prichod.Year, d.Prichod.Month });
 
             string zprava = "Záznamy docházky:\n";
             foreach (var mesic in mesice)
@@ -226,6 +228,7 @@ namespace DochazkaTracker
 
             MessageBox.Show(zprava, "Docházka", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+
 
         private void BtnVymazatZaznamy_Click(object sender, RoutedEventArgs e)
         {
