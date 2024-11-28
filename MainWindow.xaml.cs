@@ -317,6 +317,124 @@ namespace DochazkaTracker
             displayWindow.ShowDialog();
         }
 
+        private void BtnImportovat_Click(object sender, RoutedEventArgs e)
+        {
+            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Excel Files|*.xlsx;*.xls",
+                Title = "Vyberte Excel soubor pro import"
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                string filePath = openFileDialog.FileName;
+
+                try
+                {
+                    using (ExcelPackage package = new ExcelPackage(new FileInfo(filePath)))
+                    {
+                        ExcelWorksheet worksheet = package.Workbook.Worksheets.FirstOrDefault();
+                        if (worksheet == null)
+                        {
+                            MessageBox.Show("Excel soubor neobsahuje žádné listy.", "Import", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            return;
+                        }
+
+                        int rowCount = worksheet.Dimension.Rows;
+
+                        if (rowCount < 2) // Předpokládáme, že první řádek jsou záhlaví
+                        {
+                            MessageBox.Show("Excel soubor neobsahuje žádné záznamy.", "Import", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            return;
+                        }
+
+                        List<Dochazka> importedDochazky = new List<Dochazka>();
+
+                        for (int row = 2; row <= rowCount; row++)
+                        {
+                            try
+                            {
+                                // Získání textu z prvního sloupce
+                                string datumText = worksheet.Cells[row, 1].Text.Trim();
+
+                                // Kontrola prázdných řádků
+                                if (string.IsNullOrWhiteSpace(datumText))
+                                {
+                                    continue; // Přeskočí prázdné řádky
+                                }
+
+                                // Přeskočení řádků s měsícem a rokem (např. "10/2024")
+                                if (datumText.Length <= 7 && datumText.Contains("/"))
+                                {
+                                    continue; // Ignorujeme oddělovače měsíců
+                                }
+
+                                // Kontrola, zda text je validní datum
+                                if (!DateTime.TryParse(datumText, out DateTime datum))
+                                {
+                                    MessageBox.Show($"Chyba při zpracování řádku {row}: '{datumText}' není validní datum.", "Import", MessageBoxButton.OK, MessageBoxImage.Warning);
+                                    continue;
+                                }
+
+                                // Získání příchodu, odchodu a režimu
+                                string prichodText = worksheet.Cells[row, 2].Text;
+                                string odchodText = worksheet.Cells[row, 3].Text;
+                                string rezim = worksheet.Cells[row, 5].Text; // Poznámka použita jako režim
+
+                                // Sestavení datumu a času příchodu a odchodu
+                                DateTime prichod = DateTime.ParseExact($"{datum:dd.MM.yyyy} {prichodText}", "dd.MM.yyyy HH:mm", null);
+                                DateTime? odchod = string.IsNullOrWhiteSpace(odchodText)
+                                    ? (DateTime?)null
+                                    : DateTime.ParseExact($"{datum:dd.MM.yyyy} {odchodText}", "dd.MM.yyyy HH:mm", null);
+
+                                Dochazka novaDochazka = new Dochazka
+                                {
+                                    Prichod = prichod,
+                                    Odchod = odchod,
+                                    Rezim = rezim
+                                };
+                                novaDochazka.VypocetRozdilu();
+
+                                importedDochazky.Add(novaDochazka);
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show($"Chyba při zpracování řádku {row}: {ex.Message}", "Import", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            }
+                        }
+
+                        if (importedDochazky.Count > 0)
+                        {
+                            dochazky.AddRange(importedDochazky);
+                            SaveDochazkaData();
+                            MessageBox.Show($"Úspěšně naimportováno {importedDochazky.Count} záznamů.", "Import", MessageBoxButton.OK, MessageBoxImage.Information);
+                        }
+                        else
+                        {
+                            MessageBox.Show("Excel soubor neobsahuje platné záznamy.", "Import", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Chyba při čtení Excel souboru: {ex.Message}", "Import", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+
+
+        // Metoda pro odstranění dne v týdnu z textu
+        private string RemoveDayOfWeek(string input)
+        {
+            string[] daysOfWeek = { "pondělí", "úterý", "středa", "čtvrtek", "pátek", "sobota", "neděle" };
+            foreach (var day in daysOfWeek)
+            {
+                input = input.Replace(day, "").Trim();
+            }
+            return input;
+        }
+
 
 
 

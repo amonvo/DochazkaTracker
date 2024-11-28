@@ -8,6 +8,7 @@
             <Button x:Name="BtnDoplnitDochazku" Content="Doplnit Docházku" Width="250" Height="50" Margin="0,10,0,10" Background="LightGreen" Click="BtnDoplnitDochazku_Click"/>
             <Button x:Name="BtnEditovatZaznam" Content="Editovat Záznam" Width="250" Height="50" Margin="0,10,0,10" Background="LightBlue" Click="BtnEditovatZaznam_Click"/>
             <Button x:Name="BtnExportovat" Content="Exportovat do Excelu" Width="250" Height="50" Margin="0,10,0,10" Background="LightSkyBlue" Click="BtnExportovat_Click"/>
+            <Button x:Name="BtnImportovat" Content="Importovat Excel" Width="250" Height="50" Margin="0,10,0,10" Background="LightGreen" Click="BtnImportovat_Click"/>
             <Button x:Name="BtnZobrazitDochazku" Content="Zobrazit Docházku" Width="250" Height="50" Margin="0,10,0,10" Background="LightYellow" Click="BtnZobrazitDochazku_Click"/>
             <Button x:Name="BtnVymazatZaznamy" Content="Vymazat Záznamy" Width="250" Height="50" Margin="0,10,0,10" Background="LightPink" Click="BtnVymazatZaznamy_Click"/>
             <Button x:Name="BtnStatistiky" Content="Zobrazit Statistiky" Width="250" Height="50" Margin="0,10,0,10" Background="LightCyan" Click="BtnStatistiky_Click"/>
