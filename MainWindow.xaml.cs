@@ -10,6 +10,8 @@ using LiveCharts;
 using LiveCharts.Wpf;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
+using System.Windows.Media;
+
 
 namespace DochazkaTracker
 {
@@ -202,7 +204,6 @@ namespace DochazkaTracker
             MessageBox.Show($"Docházka byla exportována do souboru {filePath}", "Export", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-
         private void BtnZobrazitDochazku_Click(object sender, RoutedEventArgs e)
         {
             if (dochazky.Count == 0)
@@ -211,23 +212,181 @@ namespace DochazkaTracker
                 return;
             }
 
-            // Seřazení záznamů podle data (sestupně - nejnovější nahoře)
-            var sortedDochazky = dochazky.OrderByDescending(d => d.Prichod).ToList();
+            // Seřazení záznamů podle data vzestupně
+            var sortedDochazky = dochazky.OrderBy(d => d.Prichod).ToList();
 
-            var mesice = sortedDochazky.GroupBy(d => new { d.Prichod.Year, d.Prichod.Month });
-
-            string zprava = "Záznamy docházky:\n";
-            foreach (var mesic in mesice)
+            StackPanel mainPanel = new StackPanel
             {
-                zprava += $"\n{mesic.Key.Month}/{mesic.Key.Year}:\n";
-                foreach (var dochazka in mesic)
+                Margin = new Thickness(10)
+            };
+
+            // Seskupení záznamů podle měsíce a roku
+            var groupedByMonth = sortedDochazky.GroupBy(d => new { d.Prichod.Year, d.Prichod.Month });
+
+            foreach (var group in groupedByMonth)
+            {
+                TextBlock monthHeader = new TextBlock
                 {
-                    zprava += $"Datum: {dochazka.Prichod.ToShortDateString()}, Příchod: {dochazka.Prichod:HH:mm}, Odchod: {dochazka.Odchod?.ToString("HH:mm") ?? "N/A"}, Rozdíl: {dochazka.Rozdil}, Režim: {dochazka.Rezim}\n";
+                    Text = $"{group.Key.Month}/{group.Key.Year}",
+                    FontWeight = FontWeights.Bold,
+                    FontSize = 16,
+                    Margin = new Thickness(0, 10, 0, 10)
+                };
+                mainPanel.Children.Add(monthHeader);
+
+                double monthlyDeficitOrOvertime = 0; // Přesčas nebo deficit za měsíc
+
+                // Počet zaznamenaných dní v měsíci
+                int recordedDays = group.Count();
+
+                foreach (var dochazka in group)
+                {
+                    TextBlock recordText = new TextBlock
+                    {
+                        Margin = new Thickness(0, 5, 0, 5)
+                    };
+
+                    // Požadovaný čas práce za den
+                    double requiredHours = 9;
+                    double totalHours = dochazka.Rozdil.TotalHours;
+
+                    // Výpočet aktuálního přebytku nebo deficitu
+                    string timeInfo;
+                    if (totalHours >= requiredHours)
+                    {
+                        double overtime = totalHours - requiredHours;
+                        monthlyDeficitOrOvertime += overtime; // Přičítáme přesčas
+                        timeInfo = $"Přesčas: +{overtime:F2} hodin, doporučený odchod: {dochazka.Prichod.AddHours(requiredHours):HH:mm}";
+                        recordText.Foreground = Brushes.Green; // Zelený text pro přesčas
+                    }
+                    else
+                    {
+                        double deficit = requiredHours - totalHours;
+                        monthlyDeficitOrOvertime -= deficit; // Odečítáme deficit
+                        timeInfo = $"Mínus: -{deficit:F2} hodin, potřebný odchod: {dochazka.Prichod.AddHours(requiredHours):HH:mm}";
+                        recordText.Foreground = Brushes.Red; // Červený text pro deficit
+                    }
+
+                    recordText.Text = $"Datum: {dochazka.Prichod.ToShortDateString()} ({dochazka.Prichod.DayOfWeek}), Příchod: {dochazka.Prichod:HH:mm}, Odchod: {dochazka.Odchod?.ToString("HH:mm") ?? "N/A"}\n{timeInfo}";
+                    mainPanel.Children.Add(recordText);
                 }
+
+                // Shrnutí za měsíc na základě zaznamenaných dní
+                TextBlock monthSummary = new TextBlock
+                {
+                    Margin = new Thickness(0, 10, 0, 5),
+                    FontWeight = FontWeights.Bold
+                };
+
+                if (monthlyDeficitOrOvertime > 0)
+                {
+                    monthSummary.Text = $"Přesčas za {group.Key.Month}/{group.Key.Year}: +{monthlyDeficitOrOvertime:F2} hodin (zaznamenáno {recordedDays} dní).";
+                    monthSummary.Foreground = Brushes.Green;
+                }
+                else if (monthlyDeficitOrOvertime < 0)
+                {
+                    monthSummary.Text = $"Deficit za {group.Key.Month}/{group.Key.Year}: -{Math.Abs(monthlyDeficitOrOvertime):F2} hodin (zaznamenáno {recordedDays} dní).";
+                    monthSummary.Foreground = Brushes.Red;
+                }
+                else
+                {
+                    monthSummary.Text = $"Za {group.Key.Month}/{group.Key.Year} nemáte žádný přesčas ani deficit.";
+                    monthSummary.Foreground = Brushes.Black;
+                }
+
+                mainPanel.Children.Add(monthSummary);
             }
 
-            MessageBox.Show(zprava, "Docházka", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            // Zobrazení všech záznamů ve vyskakovacím okně
+            ScrollViewer scrollViewer = new ScrollViewer
+            {
+                Content = mainPanel,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+            };
+
+            Window displayWindow = new Window
+            {
+                Title = "Docházka",
+                Content = scrollViewer,
+                Width = 600,
+                Height = 400,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen
+            };
+
+            displayWindow.ShowDialog();
         }
+
+
+
+
+        //private void BtnZobrazitDochazku_Click(object sender, RoutedEventArgs e)
+        //{
+        //    if (dochazky.Count == 0)
+        //    {
+        //        MessageBox.Show("Nejsou žádné záznamy k zobrazení.", "Docházka", MessageBoxButton.OK, MessageBoxImage.Warning);
+        //        return;
+        //    }
+
+        //    // Seřazení záznamů podle data vzestupně
+        //    var sortedDochazky = dochazky.OrderBy(d => d.Prichod).ToList();
+
+        //    StackPanel mainPanel = new StackPanel
+        //    {
+        //        Margin = new Thickness(10)
+        //    };
+
+        //    foreach (var dochazka in sortedDochazky)
+        //    {
+        //        TextBlock recordText = new TextBlock
+        //        {
+        //            Margin = new Thickness(0, 5, 0, 5)
+        //        };
+
+        //        // Počítáme rozdíl pracovní doby
+        //        double totalHours = dochazka.Rozdil.TotalHours;
+        //        double requiredHours = 9; // Požadovaný čas pro splnění pracovní doby
+        //        string timeInfo;
+
+        //        if (totalHours >= requiredHours)
+        //        {
+        //            double overtime = totalHours - requiredHours;
+        //            DateTime suggestedLeaveTime = dochazka.Prichod.AddHours(requiredHours);
+        //            timeInfo = $"Přesčas: +{overtime:F2} hodin, doporučený odchod: {suggestedLeaveTime:HH:mm}";
+        //            recordText.Foreground = Brushes.Green; // Zelený text pro přesčas
+        //        }
+        //        else
+        //        {
+        //            double deficit = requiredHours - totalHours;
+        //            DateTime requiredLeaveTime = dochazka.Prichod.AddHours(requiredHours);
+        //            timeInfo = $"Mínus: -{deficit:F2} hodin, potřebný odchod: {requiredLeaveTime:HH:mm}";
+        //            recordText.Foreground = Brushes.Red; // Červený text pro deficit
+        //        }
+
+        //        // Zobrazujeme data docházky
+        //        recordText.Text = $"Datum: {dochazka.Prichod.ToShortDateString()}, Příchod: {dochazka.Prichod:HH:mm}, Odchod: {dochazka.Odchod?.ToString("HH:mm") ?? "N/A"}\n{timeInfo}";
+        //        mainPanel.Children.Add(recordText);
+        //    }
+
+        //    // Zobrazení všech záznamů ve vyskakovacím okně
+        //    ScrollViewer scrollViewer = new ScrollViewer
+        //    {
+        //        Content = mainPanel,
+        //        VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+        //    };
+
+        //    Window displayWindow = new Window
+        //    {
+        //        Title = "Docházka",
+        //        Content = scrollViewer,
+        //        Width = 600,
+        //        Height = 400,
+        //        WindowStartupLocation = WindowStartupLocation.CenterScreen
+        //    };
+
+        //    displayWindow.ShowDialog();
+        //}
+
 
 
         private void BtnVymazatZaznamy_Click(object sender, RoutedEventArgs e)
