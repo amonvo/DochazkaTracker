@@ -212,110 +212,107 @@ namespace DochazkaTracker
                 return;
             }
 
-            // Seřazení záznamů podle data vzestupně
-            var sortedDochazky = dochazky.OrderBy(d => d.Prichod).ToList();
+            const double prumernyPracovniDen = 8.5;
 
-            StackPanel mainPanel = new StackPanel
+            // Seskupení záznamů podle měsíců a roků
+            var mesice = dochazky.GroupBy(d => new { d.Prichod.Year, d.Prichod.Month })
+                                 .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month);
+
+            // Vytvoření okna pro zobrazení
+            Window dochazkaWindow = new Window
             {
-                Margin = new Thickness(10)
+                Title = "Docházka",
+                Width = 600,
+                Height = 800,
+                Content = new ScrollViewer()
+                {
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    Content = new StackPanel()
+                }
             };
 
-            // Seskupení záznamů podle měsíce a roku
-            var groupedByMonth = sortedDochazky.GroupBy(d => new { d.Prichod.Year, d.Prichod.Month });
+            StackPanel mainPanel = (StackPanel)((ScrollViewer)dochazkaWindow.Content).Content;
 
-            foreach (var group in groupedByMonth)
+            foreach (var group in mesice)
             {
+                // Zobrazení nadpisu pro měsíc
                 TextBlock monthHeader = new TextBlock
                 {
                     Text = $"{group.Key.Month}/{group.Key.Year}",
                     FontWeight = FontWeights.Bold,
                     FontSize = 16,
-                    Margin = new Thickness(0, 10, 0, 10)
+                    Margin = new Thickness(0, 10, 0, 5)
                 };
                 mainPanel.Children.Add(monthHeader);
 
-                double monthlyDeficitOrOvertime = 0; // Přesčas nebo deficit za měsíc
-
-                // Počet zaznamenaných dní v měsíci
-                int recordedDays = group.Count();
-
+                // Iterace přes jednotlivé záznamy v měsíci
                 foreach (var dochazka in group)
                 {
-                    TextBlock recordText = new TextBlock
-                    {
-                        Margin = new Thickness(0, 5, 0, 5)
-                    };
+                    string status;
+                    SolidColorBrush color;
 
-                    // Požadovaný čas práce za den
-                    double requiredHours = 9;
-                    double totalHours = dochazka.Rozdil.TotalHours;
-
-                    // Výpočet aktuálního přebytku nebo deficitu
-                    string timeInfo;
-                    if (totalHours >= requiredHours)
+                    if (dochazka.Rozdil.TotalHours >= prumernyPracovniDen)
                     {
-                        double overtime = totalHours - requiredHours;
-                        monthlyDeficitOrOvertime += overtime; // Přičítáme přesčas
-                        timeInfo = $"Přesčas: +{overtime:F2} hodin, doporučený odchod: {dochazka.Prichod.AddHours(requiredHours):HH:mm}";
-                        recordText.Foreground = Brushes.Green; // Zelený text pro přesčas
+                        status = $"Přesčas: +{dochazka.Rozdil.TotalHours - prumernyPracovniDen:F2} hodin, doporučený odchod: {dochazka.Prichod.AddHours(prumernyPracovniDen):HH:mm}";
+                        color = Brushes.Green;
                     }
                     else
                     {
-                        double deficit = requiredHours - totalHours;
-                        monthlyDeficitOrOvertime -= deficit; // Odečítáme deficit
-                        timeInfo = $"Mínus: -{deficit:F2} hodin, potřebný odchod: {dochazka.Prichod.AddHours(requiredHours):HH:mm}";
-                        recordText.Foreground = Brushes.Red; // Červený text pro deficit
+                        status = $"Minus: -{prumernyPracovniDen - dochazka.Rozdil.TotalHours:F2} hodin, potřebný odchod: {dochazka.Prichod.AddHours(prumernyPracovniDen):HH:mm}";
+                        color = Brushes.Red;
                     }
 
-                    recordText.Text = $"Datum: {dochazka.Prichod.ToShortDateString()} ({dochazka.Prichod.DayOfWeek}), Příchod: {dochazka.Prichod:HH:mm}, Odchod: {dochazka.Odchod?.ToString("HH:mm") ?? "N/A"}\n{timeInfo}";
+                    TextBlock recordText = new TextBlock
+                    {
+                        Text = $"Datum: {dochazka.Prichod:dd.MM.yyyy} ({dochazka.Prichod:dddd}), Příchod: {dochazka.Prichod:HH:mm}, Odchod: {dochazka.Odchod?.ToString("HH:mm") ?? "N/A"}\n{status}",
+                        Margin = new Thickness(0, 0, 0, 5),
+                        Foreground = color
+                    };
                     mainPanel.Children.Add(recordText);
                 }
 
-                // Shrnutí za měsíc na základě zaznamenaných dní
+                // Výpočet měsíčního deficitu, odpracovaných hodin a očekávaných hodin
+                int pracovnichDniVMesici = group.Count();
+                double celkoveOdpracovaneHodiny = group.Sum(d => d.Rozdil.TotalHours);
+                double ocekavaneHodiny = pracovnichDniVMesici * prumernyPracovniDen;
+                double rozdilHodin = celkoveOdpracovaneHodiny - ocekavaneHodiny;
+
+                // Shrnutí měsíčních statistik
                 TextBlock monthSummary = new TextBlock
                 {
                     Margin = new Thickness(0, 10, 0, 5),
                     FontWeight = FontWeights.Bold
                 };
 
-                if (monthlyDeficitOrOvertime > 0)
+                if (rozdilHodin > 0)
                 {
-                    monthSummary.Text = $"Přesčas za {group.Key.Month}/{group.Key.Year}: +{monthlyDeficitOrOvertime:F2} hodin (zaznamenáno {recordedDays} dní).";
+                    monthSummary.Text = $"Přesčas za {group.Key.Month}/{group.Key.Year}: +{rozdilHodin:F2} hodin\n" +
+                                        $"Očekávaný počet hodin: {ocekavaneHodiny:F2} hodin\n" +
+                                        $"Odpracovaný počet hodin: {celkoveOdpracovaneHodiny:F2} hodin";
                     monthSummary.Foreground = Brushes.Green;
                 }
-                else if (monthlyDeficitOrOvertime < 0)
+                else if (rozdilHodin < 0)
                 {
-                    monthSummary.Text = $"Deficit za {group.Key.Month}/{group.Key.Year}: -{Math.Abs(monthlyDeficitOrOvertime):F2} hodin (zaznamenáno {recordedDays} dní).";
+                    monthSummary.Text = $"Deficit za {group.Key.Month}/{group.Key.Year}: {rozdilHodin:F2} hodin\n" +
+                                        $"Očekávaný počet hodin: {ocekavaneHodiny:F2} hodin\n" +
+                                        $"Odpracovaný počet hodin: {celkoveOdpracovaneHodiny:F2} hodin";
                     monthSummary.Foreground = Brushes.Red;
                 }
                 else
                 {
-                    monthSummary.Text = $"Za {group.Key.Month}/{group.Key.Year} nemáte žádný přesčas ani deficit.";
+                    monthSummary.Text = $"Za {group.Key.Month}/{group.Key.Year} nemáte žádný přesčas ani deficit.\n" +
+                                        $"Očekávaný počet hodin: {ocekavaneHodiny:F2} hodin\n" +
+                                        $"Odpracovaný počet hodin: {celkoveOdpracovaneHodiny:F2} hodin";
                     monthSummary.Foreground = Brushes.Black;
                 }
 
                 mainPanel.Children.Add(monthSummary);
             }
 
-
-            // Zobrazení všech záznamů ve vyskakovacím okně
-            ScrollViewer scrollViewer = new ScrollViewer
-            {
-                Content = mainPanel,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
-            };
-
-            Window displayWindow = new Window
-            {
-                Title = "Docházka",
-                Content = scrollViewer,
-                Width = 600,
-                Height = 400,
-                WindowStartupLocation = WindowStartupLocation.CenterScreen
-            };
-
-            displayWindow.ShowDialog();
+            dochazkaWindow.ShowDialog();
         }
+
+
 
         private void BtnImportovat_Click(object sender, RoutedEventArgs e)
         {
@@ -526,6 +523,9 @@ namespace DochazkaTracker
                 return;
             }
 
+            // Nastavený průměrný pracovní den
+            const double prumernyPracovniDen = 8.5;
+
             // Vytvoření ComboBoxu pro výběr měsíce a roku
             ComboBox monthFilter = new ComboBox
             {
@@ -582,21 +582,25 @@ namespace DochazkaTracker
 
                 // Výpočet statistik
                 double prumernaPracovniDoba = filteredDochazky.Average(d => d.Rozdil.TotalHours);
-                int pocetDniSplneno = filteredDochazky.Count(d => d.Rozdil.TotalHours >= 9);
-                int pocetDniNesplneno = filteredDochazky.Count(d => d.Rozdil.TotalHours < 9);
-                double celkovyPrescas = filteredDochazky.Sum(d => Math.Max(0, d.Rozdil.TotalHours - 9));
+                int pocetDniSplneno = filteredDochazky.Count(d => d.Rozdil.TotalHours >= prumernyPracovniDen);
+                int pocetDniNesplneno = filteredDochazky.Count(d => d.Rozdil.TotalHours < prumernyPracovniDen);
+                double celkovyPrescas = filteredDochazky.Sum(d => Math.Max(0, d.Rozdil.TotalHours - prumernyPracovniDen));
+                double celkovyDeficit = filteredDochazky.Sum(d => Math.Max(0, prumernyPracovniDen - d.Rozdil.TotalHours));
 
                 string zprava = $"Statistiky pro {selectedMonth}:\n" +
                                 $"Průměrná pracovní doba: {prumernaPracovniDoba:F2} hodin\n" +
-                                $"Počet dní splněno (9+ hodin): {pocetDniSplneno}\n" +
-                                $"Počet dní nesplněno (< 9 hodin): {pocetDniNesplneno}\n" +
-                                $"Celkový přesčas: {celkovyPrescas:F2} hodin";
+                                $"Počet dní splněno (≥ {prumernyPracovniDen} hodin): {pocetDniSplneno}\n" +
+                                $"Počet dní nesplněno (< {prumernyPracovniDen} hodin): {pocetDniNesplneno}\n" +
+                                $"Celkový přesčas: {celkovyPrescas:F2} hodin\n" +
+                                $"Celkový deficit: {celkovyDeficit:F2} hodin\n" +
+                                $"Průměrný pracovní den: {prumernyPracovniDen} hodin";
 
                 MessageBox.Show(zprava, "Statistiky", MessageBoxButton.OK, MessageBoxImage.Information);
             };
 
             statWindow.ShowDialog();
         }
+
 
 
 
