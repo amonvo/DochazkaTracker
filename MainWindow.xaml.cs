@@ -11,6 +11,7 @@ using LiveCharts.Wpf;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 
 
 namespace DochazkaTracker
@@ -39,6 +40,14 @@ namespace DochazkaTracker
             // Uložení záznamů při zavření okna
             this.Closing += MainWindow_Closing;
         }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Najdeme animaci podle jejího klíče a spustíme ji
+            Storyboard fadeInStoryboard = (Storyboard)FindResource("FadeInAnimation");
+            fadeInStoryboard.Begin(this);
+        }
+
 
         private void LoadDochazkaData()
         {
@@ -149,7 +158,7 @@ namespace DochazkaTracker
         }
 
 
-        private void BtnExportovat_Click(object sender, RoutedEventArgs e)
+        private async void BtnExportovat_Click(object sender, RoutedEventArgs e)
         {
             if (dochazky.Count == 0)
             {
@@ -157,52 +166,50 @@ namespace DochazkaTracker
                 return;
             }
 
+            var startTime = DateTime.Now;
+
+            LoadingBar.Visibility = Visibility.Visible;
+
             string filePath = "dochazka.xlsx";
-            using (ExcelPackage package = new ExcelPackage())
+            await Task.Run(() =>
             {
-                ExcelWorksheet worksheet = package.Workbook.Worksheets.Add("Docházka");
-                worksheet.Cells[1, 1].Value = "Datum";
-                worksheet.Cells[1, 2].Value = "Příchod";
-                worksheet.Cells[1, 3].Value = "Odchod";
-                worksheet.Cells[1, 4].Value = "Rozdíl";
-                worksheet.Cells[1, 5].Value = "Poznámka";
-                worksheet.Row(1).Style.Font.Bold = true;
-
-                int row = 2;
-
-                var groupedDochazky = dochazky.GroupBy(d => new { d.Prichod.Year, d.Prichod.Month })
-                                              .OrderBy(g => g.Key.Year)
-                                              .ThenBy(g => g.Key.Month);
-
-                foreach (var monthGroup in groupedDochazky)
+                using (ExcelPackage package = new ExcelPackage())
                 {
-                    worksheet.Cells[row, 1].Value = $"{monthGroup.Key.Month}/{monthGroup.Key.Year}";
-                    worksheet.Row(row).Style.Font.Bold = true;
-                    row++;
+                    ExcelWorksheet worksheet = package.Workbook.Worksheets.Add("Docházka");
+                    worksheet.Cells[1, 1].Value = "Datum";
+                    worksheet.Cells[1, 2].Value = "Příchod";
+                    worksheet.Cells[1, 3].Value = "Odchod";
+                    worksheet.Cells[1, 4].Value = "Rozdíl";
+                    worksheet.Cells[1, 5].Value = "Poznámka";
+                    worksheet.Row(1).Style.Font.Bold = true;
 
-                    foreach (var dochazka in monthGroup)
+                    int row = 2;
+                    foreach (var dochazka in dochazky)
                     {
                         worksheet.Cells[row, 1].Value = dochazka.Prichod.ToShortDateString();
                         worksheet.Cells[row, 2].Value = dochazka.Prichod.ToString("HH:mm");
                         worksheet.Cells[row, 3].Value = dochazka.Odchod?.ToString("HH:mm");
                         worksheet.Cells[row, 4].Value = dochazka.Rozdil.ToString();
-                        worksheet.Cells[row, 5].Value = dochazka.Rozdil.TotalHours >= 9 ? "Splněno" : "Nesplněno";
+                        worksheet.Cells[row, 5].Value = dochazka.Rezim;
                         row++;
                     }
 
-                    row++; // Prázdný řádek mezi jednotlivými měsíci
+                    File.WriteAllBytes(filePath, package.GetAsByteArray());
                 }
+            });
 
-                worksheet.Cells[$"A1:E{row - 1}"].AutoFitColumns();
-                worksheet.Cells[$"A1:E{row - 1}"].Style.Border.Top.Style = ExcelBorderStyle.Thin;
-                worksheet.Cells[$"A1:E{row - 1}"].Style.Border.Bottom.Style = ExcelBorderStyle.Thin;
-                worksheet.Cells[$"A1:E{row - 1}"].Style.Border.Left.Style = ExcelBorderStyle.Thin;
-                worksheet.Cells[$"A1:E{row - 1}"].Style.Border.Right.Style = ExcelBorderStyle.Thin;
-
-                File.WriteAllBytes(filePath, package.GetAsByteArray());
+            // Zajistit minimální dobu zobrazení ProgressBaru
+            var elapsedTime = DateTime.Now - startTime;
+            if (elapsedTime.TotalMilliseconds < 1000)
+            {
+                await Task.Delay(1000 - (int)elapsedTime.TotalMilliseconds);
             }
+
+            LoadingBar.Visibility = Visibility.Collapsed;
+
             MessageBox.Show($"Docházka byla exportována do souboru {filePath}", "Export", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+
 
         private void BtnZobrazitDochazku_Click(object sender, RoutedEventArgs e)
         {
@@ -432,78 +439,6 @@ namespace DochazkaTracker
             return input;
         }
 
-
-
-
-        //private void BtnZobrazitDochazku_Click(object sender, RoutedEventArgs e)
-        //{
-        //    if (dochazky.Count == 0)
-        //    {
-        //        MessageBox.Show("Nejsou žádné záznamy k zobrazení.", "Docházka", MessageBoxButton.OK, MessageBoxImage.Warning);
-        //        return;
-        //    }
-
-        //    // Seřazení záznamů podle data vzestupně
-        //    var sortedDochazky = dochazky.OrderBy(d => d.Prichod).ToList();
-
-        //    StackPanel mainPanel = new StackPanel
-        //    {
-        //        Margin = new Thickness(10)
-        //    };
-
-        //    foreach (var dochazka in sortedDochazky)
-        //    {
-        //        TextBlock recordText = new TextBlock
-        //        {
-        //            Margin = new Thickness(0, 5, 0, 5)
-        //        };
-
-        //        // Počítáme rozdíl pracovní doby
-        //        double totalHours = dochazka.Rozdil.TotalHours;
-        //        double requiredHours = 9; // Požadovaný čas pro splnění pracovní doby
-        //        string timeInfo;
-
-        //        if (totalHours >= requiredHours)
-        //        {
-        //            double overtime = totalHours - requiredHours;
-        //            DateTime suggestedLeaveTime = dochazka.Prichod.AddHours(requiredHours);
-        //            timeInfo = $"Přesčas: +{overtime:F2} hodin, doporučený odchod: {suggestedLeaveTime:HH:mm}";
-        //            recordText.Foreground = Brushes.Green; // Zelený text pro přesčas
-        //        }
-        //        else
-        //        {
-        //            double deficit = requiredHours - totalHours;
-        //            DateTime requiredLeaveTime = dochazka.Prichod.AddHours(requiredHours);
-        //            timeInfo = $"Mínus: -{deficit:F2} hodin, potřebný odchod: {requiredLeaveTime:HH:mm}";
-        //            recordText.Foreground = Brushes.Red; // Červený text pro deficit
-        //        }
-
-        //        // Zobrazujeme data docházky
-        //        recordText.Text = $"Datum: {dochazka.Prichod.ToShortDateString()}, Příchod: {dochazka.Prichod:HH:mm}, Odchod: {dochazka.Odchod?.ToString("HH:mm") ?? "N/A"}\n{timeInfo}";
-        //        mainPanel.Children.Add(recordText);
-        //    }
-
-        //    // Zobrazení všech záznamů ve vyskakovacím okně
-        //    ScrollViewer scrollViewer = new ScrollViewer
-        //    {
-        //        Content = mainPanel,
-        //        VerticalScrollBarVisibility = ScrollBarVisibility.Auto
-        //    };
-
-        //    Window displayWindow = new Window
-        //    {
-        //        Title = "Docházka",
-        //        Content = scrollViewer,
-        //        Width = 600,
-        //        Height = 400,
-        //        WindowStartupLocation = WindowStartupLocation.CenterScreen
-        //    };
-
-        //    displayWindow.ShowDialog();
-        //}
-
-
-
         private void BtnVymazatZaznamy_Click(object sender, RoutedEventArgs e)
         {
             if (MessageBox.Show("Opravdu chcete vymazat všechny záznamy?", "Vymazat záznamy", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
@@ -523,7 +458,6 @@ namespace DochazkaTracker
                 return;
             }
 
-            // Nastavený průměrný pracovní den
             const double prumernyPracovniDen = 8.5;
 
             // Vytvoření ComboBoxu pro výběr měsíce a roku
@@ -552,11 +486,42 @@ namespace DochazkaTracker
             Window statWindow = new Window
             {
                 Title = "Výběr měsíce pro statistiky",
-                Width = 300,
-                Height = 200,
-                Content = panel,
+                Width = 400,
+                Height = 600,
                 WindowStartupLocation = WindowStartupLocation.CenterScreen
             };
+
+            DataGrid statGrid = new DataGrid
+            {
+                AutoGenerateColumns = false,
+                IsReadOnly = true,
+                Margin = new Thickness(10),
+                HeadersVisibility = DataGridHeadersVisibility.Column
+            };
+
+            statGrid.Columns.Add(new DataGridTextColumn
+            {
+                Header = "Den",
+                Binding = new System.Windows.Data.Binding("Den")
+            });
+
+            statGrid.Columns.Add(new DataGridTextColumn
+            {
+                Header = "Očekávané hodiny",
+                Binding = new System.Windows.Data.Binding("OcekavaneHodiny")
+            });
+
+            statGrid.Columns.Add(new DataGridTextColumn
+            {
+                Header = "Odpracované hodiny",
+                Binding = new System.Windows.Data.Binding("OdpracovaneHodiny")
+            });
+
+            statGrid.Columns.Add(new DataGridTextColumn
+            {
+                Header = "Rozdíl",
+                Binding = new System.Windows.Data.Binding("Rozdil")
+            });
 
             calculateButton.Click += (s, args) =>
             {
@@ -566,13 +531,11 @@ namespace DochazkaTracker
                     return;
                 }
 
-                // Získání vybraného měsíce a roku
                 string selectedMonth = monthFilter.SelectedItem.ToString();
                 int month = int.Parse(selectedMonth.Split('/')[0]);
                 int year = int.Parse(selectedMonth.Split('/')[1]);
 
-                // Filtrování záznamů pro vybraný měsíc a rok
-                var filteredDochazky = dochazky.Where(d => d.Prichod.Month == month && d.Prichod.Year == year);
+                var filteredDochazky = dochazky.Where(d => d.Prichod.Month == month && d.Prichod.Year == year).ToList();
 
                 if (!filteredDochazky.Any())
                 {
@@ -580,27 +543,27 @@ namespace DochazkaTracker
                     return;
                 }
 
-                // Výpočet statistik
-                double prumernaPracovniDoba = filteredDochazky.Average(d => d.Rozdil.TotalHours);
-                int pocetDniSplneno = filteredDochazky.Count(d => d.Rozdil.TotalHours >= prumernyPracovniDen);
-                int pocetDniNesplneno = filteredDochazky.Count(d => d.Rozdil.TotalHours < prumernyPracovniDen);
-                double celkovyPrescas = filteredDochazky.Sum(d => Math.Max(0, d.Rozdil.TotalHours - prumernyPracovniDen));
-                double celkovyDeficit = filteredDochazky.Sum(d => Math.Max(0, prumernyPracovniDen - d.Rozdil.TotalHours));
+                int zaznamenaneDny = filteredDochazky.Count();
+                double odpracovaneHodiny = filteredDochazky.Sum(d => d.Rozdil.TotalHours);
+                double ocekavaneHodiny = zaznamenaneDny * prumernyPracovniDen;
+                double rozdilHodin = odpracovaneHodiny - ocekavaneHodiny;
 
-                string zprava = $"Statistiky pro {selectedMonth}:\n" +
-                                $"Průměrná pracovní doba: {prumernaPracovniDoba:F2} hodin\n" +
-                                $"Počet dní splněno (≥ {prumernyPracovniDen} hodin): {pocetDniSplneno}\n" +
-                                $"Počet dní nesplněno (< {prumernyPracovniDen} hodin): {pocetDniNesplneno}\n" +
-                                $"Celkový přesčas: {celkovyPrescas:F2} hodin\n" +
-                                $"Celkový deficit: {celkovyDeficit:F2} hodin\n" +
-                                $"Průměrný pracovní den: {prumernyPracovniDen} hodin";
+                var stats = new
+                {
+                    Den = $"{month}/{year}",
+                    OcekavaneHodiny = ocekavaneHodiny.ToString("N1"),
+                    OdpracovaneHodiny = odpracovaneHodiny.ToString("N1"),
+                    Rozdil = rozdilHodin > 0 ? $"+{rozdilHodin:F1}" : $"-{Math.Abs(rozdilHodin):F1}"
+                };
 
-                MessageBox.Show(zprava, "Statistiky", MessageBoxButton.OK, MessageBoxImage.Information);
+                statGrid.ItemsSource = new List<object> { stats };
             };
 
+            panel.Children.Add(statGrid);
+
+            statWindow.Content = panel;
             statWindow.ShowDialog();
         }
-
 
 
 
@@ -828,6 +791,24 @@ namespace DochazkaTracker
             timeWindow.ShowDialog();
         }
 
+        private async void SimulateLongOperation()
+        {
+            LoadingBar.Visibility = Visibility.Visible;
+            for (int i = 0; i <= 100; i++)
+            {
+                LoadingBar.Value = i;
+                await Task.Delay(20); // Simulace zpoždění
+            }
+            LoadingBar.Visibility = Visibility.Collapsed;
+        }
+
+        private void BtnNapoveda_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Docházka Tracker:\n\n1. Klikněte na 'Doplnit Docházku' pro přidání nového záznamu.\n" +
+                            "2. Použijte 'Exportovat do Excelu' pro uložení dat.\n" +
+                            "3. Pomocí 'Zobrazit Statistiky' analyzujte data za jednotlivé měsíce.\n" +
+                            "4. Všechny změny jsou automaticky ukládány.", "Nápověda", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
 
 
         public class Dochazka
