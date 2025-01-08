@@ -258,14 +258,19 @@ namespace DochazkaTracker
                     string status;
                     SolidColorBrush color;
 
+                    // Převod rozdílu na hodiny a minuty
+                    TimeSpan rozdil = dochazka.Rozdil;
+                    int rozdilHodiny = Math.Abs((int)rozdil.TotalHours);
+                    int rozdilMinuty = Math.Abs(rozdil.Minutes);
+
                     if (dochazka.Rozdil.TotalHours >= prumernyPracovniDen)
                     {
-                        status = $"Přesčas: +{dochazka.Rozdil.TotalHours - prumernyPracovniDen:F2} hodin, doporučený odchod: {dochazka.Prichod.AddHours(prumernyPracovniDen):HH:mm}";
+                        status = $"Přesčas: +{rozdilHodiny} hodin a {rozdilMinuty} minut, doporučený odchod: {dochazka.Prichod.AddHours(prumernyPracovniDen):HH:mm}";
                         color = Brushes.Green;
                     }
                     else
                     {
-                        status = $"Minus: -{prumernyPracovniDen - dochazka.Rozdil.TotalHours:F2} hodin, potřebný odchod: {dochazka.Prichod.AddHours(prumernyPracovniDen):HH:mm}";
+                        status = $"Minus: -{rozdilHodiny} hodin a {rozdilMinuty} minut, potřebný odchod: {dochazka.Prichod.AddHours(prumernyPracovniDen):HH:mm}";
                         color = Brushes.Red;
                     }
 
@@ -284,6 +289,10 @@ namespace DochazkaTracker
                 double ocekavaneHodiny = pracovnichDniVMesici * prumernyPracovniDen;
                 double rozdilHodin = celkoveOdpracovaneHodiny - ocekavaneHodiny;
 
+                // Převod rozdílu měsíčních hodin na hodiny a minuty
+                int rozdilMesicHodiny = (int)Math.Abs(rozdilHodin);
+                int rozdilMesicMinuty = (int)((Math.Abs(rozdilHodin) - rozdilMesicHodiny) * 60);
+
                 // Shrnutí měsíčních statistik
                 TextBlock monthSummary = new TextBlock
                 {
@@ -293,14 +302,14 @@ namespace DochazkaTracker
 
                 if (rozdilHodin > 0)
                 {
-                    monthSummary.Text = $"Přesčas za {group.Key.Month}/{group.Key.Year}: +{rozdilHodin:F2} hodin\n" +
+                    monthSummary.Text = $"Přesčas za {group.Key.Month}/{group.Key.Year}: +{rozdilMesicHodiny} hodin a {rozdilMesicMinuty} minut\n" +
                                         $"Očekávaný počet hodin: {ocekavaneHodiny:F2} hodin\n" +
                                         $"Odpracovaný počet hodin: {celkoveOdpracovaneHodiny:F2} hodin";
                     monthSummary.Foreground = Brushes.Green;
                 }
                 else if (rozdilHodin < 0)
                 {
-                    monthSummary.Text = $"Deficit za {group.Key.Month}/{group.Key.Year}: {rozdilHodin:F2} hodin\n" +
+                    monthSummary.Text = $"Deficit za {group.Key.Month}/{group.Key.Year}: -{rozdilMesicHodiny} hodin a {rozdilMesicMinuty} minut\n" +
                                         $"Očekávaný počet hodin: {ocekavaneHodiny:F2} hodin\n" +
                                         $"Odpracovaný počet hodin: {celkoveOdpracovaneHodiny:F2} hodin";
                     monthSummary.Foreground = Brushes.Red;
@@ -318,6 +327,7 @@ namespace DochazkaTracker
 
             dochazkaWindow.ShowDialog();
         }
+
 
 
 
