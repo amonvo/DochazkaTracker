@@ -8,8 +8,13 @@ namespace DochazkaTracker.Models
         public string DataFilePath { get; set; } = "dochazka.json";
         public List<string> Rezimy { get; set; } = new List<string>
         {
-            "Práce z domova", "Kancelář", "Dovolená", "Služební cesta"
+            "Práce z domova", "Kancelář", "Dovolená", "Služební cesta", "Nemocenská"
         };
+
+        // Nové vlastnosti
+        public int RocniDovolena { get; set; } = 25;
+        public List<PlanovanaDovolena> PlanovaneDovolene { get; set; } = new List<PlanovanaDovolena>();
+        public List<SickDay> SickDays { get; set; } = new List<SickDay>();
 
         public static AppConfig Load()
         {
@@ -41,5 +46,25 @@ namespace DochazkaTracker.Models
                 // Ignorujeme chyby při ukládání konfigurace
             }
         }
+    }
+
+    // Nové třídy
+    public class PlanovanaDovolena
+    {
+        public DateTime Od { get; set; }
+        public DateTime Do { get; set; }
+        public string Popis { get; set; } = "";
+        public bool Schvalena { get; set; } = false;
+        public DateTime DatumVytvoreni { get; set; } = DateTime.Now;
+        public int PocetDni => (int)(Do - Od).TotalDays + 1;
+    }
+
+    public class SickDay
+    {
+        public DateTime Datum { get; set; }
+        public string Duvod { get; set; } = "";
+        public bool NavstevneLekar { get; set; } = false;
+        public string Poznamka { get; set; } = "";
+        public DateTime DatumVytvoreni { get; set; } = DateTime.Now;
     }
 }
